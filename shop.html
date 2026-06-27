@@ -1,0 +1,913 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALMAHAYRI – المتجر</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="main.css">
+<style>
+  /* Shop sayfasında body tam ekran shop wrapper gösterir */
+  body { margin:0; padding:0; overflow-x:hidden; }
+  .shop-section-wrapper {
+    display: block !important;
+    position: relative !important;
+    inset: auto !important;
+    min-height: 100vh;
+  }
+</style>
+</head>
+<body>
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SHOP SECTION - Embedded Store
+═══════════════════════════════════════════════════════════════════════════ -->
+<div class="shop-section-wrapper" id="shop-section-wrapper">
+
+  <!-- Shop Header -->
+  <header class="shop-header">
+    <button class="shop-home-btn" onclick="closeShopSection()">
+      <span>&#8594;</span>
+      <span class="shop-home-label">الصفحة الرئيسية</span>
+    </button>
+    <div class="shop-brand">
+      <div class="shop-brand-icon">🌿</div>
+      <div>
+        <div class="shop-brand-name">السوق الأخضر</div>
+        <div class="shop-brand-tagline">منتجات طبيعية 100%</div>
+      </div>
+    </div>
+    <div class="shop-header-cart" onclick="shopToggleCart()">
+      <span>🛒</span>
+      <span class="shop-cart-text">السلة</span>
+      <span class="shop-cart-badge" id="shopCartBadge">0</span>
+    </div>
+  </header>
+
+  <!-- Shop Hero (features removed) -->
+  <div class="shop-hero" style="display:none;"></div>
+
+  <!-- Announcements Strip -->
+  <div class="ann-strip" id="annStrip">
+    <div class="ann-grid" id="annGrid"></div>
+  </div>
+
+  <!-- Shop Products -->
+  <div class="shop-products-section">
+    <div class="shop-section-head">
+      <h2>منتجاتنا</h2>
+      <span class="shop-count-pill" id="shopCountPill">0 منتج</span>
+    </div>
+    <div class="shop-products-grid" id="shopProductsGrid"></div>
+  </div>
+
+  <!-- Shop Admin Section -->
+  <div class="shop-admin-section">
+    <div class="shop-admin-toggle-bar" onclick="shopToggleAdminBar()">
+      <div class="shop-admin-toggle-label">
+        <span>🔐</span>
+        <span>لوحة تحكم المشرف</span>
+      </div>
+      <span class="shop-toggle-icon" id="shopToggleIcon">▾</span>
+    </div>
+
+    <div class="shop-admin-panel" id="shopAdminPanel">
+      <div class="shop-admin-bar">
+        <div class="shop-admin-bar-left">
+          <div class="shop-admin-dot"></div>
+          <span>وضع المشرف نشط — يمكنك إدارة المنتجات</span>
+        </div>
+        <button class="shop-btn-admin-logout" onclick="shopAdminLogout()">تسجيل خروج</button>
+      </div>
+      <!-- Telegram Settings -->
+      <div class="shop-tg-settings">
+        <div class="shop-tg-settings-title">✈️ إعدادات Telegram — استقبال الطلبات</div>
+        <div class="shop-tg-row">
+          <div class="shop-tg-field">
+            <label>Bot Token</label>
+            <input type="text" id="shopTgToken" placeholder="123456789:ABCDefgh..." dir="ltr">
+          </div>
+          <div class="shop-tg-field">
+            <label>Chat ID</label>
+            <input type="text" id="shopTgChatId" placeholder="-100xxxxxxxxx" dir="ltr">
+          </div>
+          <button class="shop-btn-tg-save" onclick="shopSaveTgSettings()">💾 حفظ &amp; اختبار</button>
+        </div>
+        <div class="shop-tg-status" id="shopTgStatus"></div>
+      </div>
+      <!-- Announcement Add Form -->
+      <div class="ann-add-form-wrap">
+        <div class="ann-add-form-title">📢 إضافة إعلان / عرض ترويجي</div>
+        <div class="ann-form-row">
+          <div class="ann-form-group" style="grid-column:1/-1">
+            <label>نص الإعلان</label>
+            <textarea id="annText" rows="2" placeholder="مثال: الشحن مجاني عند طلب 5 قطع فأكثر! 🎉"></textarea>
+          </div>
+          <div class="ann-form-group">
+            <label>لون البطاقة</label>
+            <div class="ann-color-picker">
+              <div class="ann-color-opt ann-color-gold selected" data-color="gold" title="ذهبي"></div>
+              <div class="ann-color-opt ann-color-green" data-color="green" title="أخضر"></div>
+              <div class="ann-color-opt ann-color-red" data-color="red" title="أحمر"></div>
+              <div class="ann-color-opt ann-color-blue" data-color="blue" title="أزرق"></div>
+              <div class="ann-color-opt ann-color-purple" data-color="purple" title="بنفسجي"></div>
+            </div>
+          </div>
+          <div class="ann-form-group">
+            <label>أيقونة</label>
+            <div class="ann-icon-picker">
+              <div class="ann-icon-opt selected" data-icon="🚚">🚚</div>
+              <div class="ann-icon-opt" data-icon="🎁">🎁</div>
+              <div class="ann-icon-opt" data-icon="⚡">⚡</div>
+              <div class="ann-icon-opt" data-icon="🔥">🔥</div>
+              <div class="ann-icon-opt" data-icon="💰">💰</div>
+              <div class="ann-icon-opt" data-icon="✨">✨</div>
+              <div class="ann-icon-opt" data-icon="📦">📦</div>
+              <div class="ann-icon-opt" data-icon="🌿">🌿</div>
+              <div class="ann-icon-opt" data-icon="" title="بدون أيقونة" style="font-size:11px;color:rgba(255,255,255,.4);">—</div>
+            </div>
+          </div>
+          <button class="ann-btn-add" onclick="annAddAnnouncement()"><span>+</span> نشر الإعلان</button>
+        </div>
+      </div>
+      <div class="shop-add-form-title">➕ إضافة منتج جديد</div>
+      <div class="shop-add-form">
+        <div class="shop-form-group">
+          <label>صورة المنتج</label>
+          <div class="shop-upload-area" id="shopMainUpload">
+            <input type="file" id="shopMainImg" accept="image/*" onchange="shopPreviewMain(this)">
+            <span class="shop-upload-icon">📷</span>
+            <span class="shop-upload-hint">اضغط أو اسحب الصورة</span>
+          </div>
+        </div>
+        <div class="shop-form-group">
+          <label>وصف المنتج</label>
+          <textarea id="shopMainText" rows="4" placeholder="اكتب اسم المنتج ووصفه..."></textarea>
+        </div>
+        <div class="shop-form-group">
+          <label>السعر</label>
+          <div class="shop-price-input-wrap">
+            <input type="number" id="shopMainPrice" placeholder="0.00" min="0" step="0.01">
+          </div>
+        </div>
+        <button class="shop-btn-add-product" onclick="shopAddProduct()"><span>+</span> إضافة</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="shop-footer">السوق الأخضر © 2025 — جميع الحقوق محفوظة</footer>
+
+  <!-- Shop Cart Drawer -->
+  <div class="shop-cart-overlay" id="shopCartOverlay" onclick="shopToggleCart()"></div>
+  <div class="shop-cart-drawer" id="shopCartDrawer">
+    <div class="shop-drawer-header">
+      <h3>🛒 سلة التسوق</h3>
+      <button class="shop-drawer-close" onclick="shopToggleCart()">×</button>
+    </div>
+    <div class="shop-drawer-items" id="shopDrawerItems"></div>
+    <div class="shop-customer-info" id="shopCustomerInfoSection">
+      <div class="shop-customer-info-title">بيانات التوصيل <span>— جميع الحقول مطلوبة</span></div>
+      <div class="shop-ci-field" id="shop-cf-name">
+        <input type="text" id="shopCiName" placeholder="الاسم الكامل *" maxlength="80">
+        <div class="shop-ci-err-msg">يرجى إدخال الاسم الكامل</div>
+      </div>
+      <div class="shop-ci-field" id="shop-cf-phone">
+        <input type="tel" id="shopCiPhone" placeholder="رقم الهاتف *" maxlength="20" dir="ltr" style="text-align:right;">
+        <div class="shop-ci-err-msg">يرجى إدخال رقم هاتف صحيح</div>
+      </div>
+      <div class="shop-ci-field" id="shop-cf-address">
+        <textarea id="shopCiAddress" placeholder="العنوان بالتفصيل *"></textarea>
+        <div class="shop-ci-err-msg">يرجى إدخال العنوان</div>
+      </div>
+    </div>
+    <div class="shop-drawer-footer">
+      <div class="shop-drawer-total"><span>إجمالي العناصر:</span><span id="shopDrawerTotal">0 عنصر</span></div>
+      <button class="shop-btn-checkout" onclick="shopCheckout()">إتمام الطلب ✓</button>
+    </div>
+  </div>
+
+  <!-- Announcement Edit Modal -->
+  <div class="ann-modal-backdrop" id="annEditModal">
+    <div class="ann-modal">
+      <button class="ann-modal-close" onclick="annCloseEditModal()">×</button>
+      <h2>✏️ تعديل الإعلان</h2>
+      <div class="ann-form-group" style="margin-bottom:14px">
+        <label style="font-size:.76rem;color:rgba(255,255,255,.45);font-weight:600;display:block;margin-bottom:6px">نص الإعلان</label>
+        <textarea id="annEditText" rows="3" style="width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(201,149,42,0.2);border-radius:10px;color:rgba(255,255,255,.88);font-family:Cairo,sans-serif;font-size:.9rem;outline:none;resize:none;direction:rtl;transition:border-color .2s" placeholder="نص الإعلان"></textarea>
+      </div>
+      <div class="ann-form-group" style="margin-bottom:14px">
+        <label style="font-size:.76rem;color:rgba(255,255,255,.45);font-weight:600;display:block;margin-bottom:8px">لون البطاقة</label>
+        <div class="ann-color-picker" id="annEditColorPicker">
+          <div class="ann-color-opt ann-color-gold"   data-color="gold"   title="ذهبي"></div>
+          <div class="ann-color-opt ann-color-green"  data-color="green"  title="أخضر"></div>
+          <div class="ann-color-opt ann-color-red"    data-color="red"    title="أحمر"></div>
+          <div class="ann-color-opt ann-color-blue"   data-color="blue"   title="أزرق"></div>
+          <div class="ann-color-opt ann-color-purple" data-color="purple" title="بنفسجي"></div>
+        </div>
+      </div>
+      <div class="ann-form-group" style="margin-bottom:14px">
+        <label style="font-size:.76rem;color:rgba(255,255,255,.45);font-weight:600;display:block;margin-bottom:8px">أيقونة</label>
+        <div class="ann-icon-picker" id="annEditIconPicker">
+          <div class="ann-icon-opt" data-icon="🚚">🚚</div>
+          <div class="ann-icon-opt" data-icon="🎁">🎁</div>
+          <div class="ann-icon-opt" data-icon="⚡">⚡</div>
+          <div class="ann-icon-opt" data-icon="🔥">🔥</div>
+          <div class="ann-icon-opt" data-icon="💰">💰</div>
+          <div class="ann-icon-opt" data-icon="✨">✨</div>
+          <div class="ann-icon-opt" data-icon="📦">📦</div>
+          <div class="ann-icon-opt" data-icon="🌿">🌿</div>
+          <div class="ann-icon-opt" data-icon="" title="بدون أيقونة" style="font-size:11px;color:rgba(255,255,255,.4);">—</div>
+        </div>
+      </div>
+      <div class="ann-modal-actions">
+        <button class="shop-btn-cancel" onclick="annCloseEditModal()">إلغاء</button>
+        <button class="shop-btn-save" onclick="annSaveEdit()">💾 حفظ التغييرات</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shop Edit Modal -->
+  <div class="shop-modal-backdrop" id="shopEditModal">
+    <div class="shop-modal">
+      <button class="shop-modal-close" onclick="shopCloseModal()">×</button>
+      <h2>تعديل المنتج</h2>
+      <div class="shop-modal-form">
+        <div class="shop-modal-upload" id="shopModalUpload">
+          <input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)">
+          <span class="shop-upload-icon">📷</span>
+          <span class="shop-upload-hint">اضغط لتغيير الصورة</span>
+        </div>
+        <div class="shop-form-group">
+          <label>وصف المنتج</label>
+          <textarea id="shopModalText" rows="4" placeholder="اكتب اسم المنتج ووصفه..."></textarea>
+        </div>
+        <div class="shop-form-group">
+          <label>السعر</label>
+          <div class="shop-price-input-wrap">
+            <input type="number" id="shopModalPrice" placeholder="0.00" min="0" step="0.01">
+          </div>
+        </div>
+        <div class="shop-modal-actions">
+          <button class="shop-btn-cancel" onclick="shopCloseModal()">إلغاء</button>
+          <button class="shop-btn-save" onclick="shopSaveEdit()">💾 حفظ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shop Toast -->
+  <div class="shop-toast" id="shopToast"></div>
+
+</div>
+
+<!-- Shop JavaScript — Firebase entegrasyonlu -->
+<script type="module">
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, getDocs, deleteDoc, doc,
+    updateDoc, query, orderBy, onSnapshot, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  // ── Firebase Config ──
+  const firebaseConfig = {
+    apiKey: "AIzaSyDJ1_f4PIHcMS2qsHRx-0PCaxRkebDI9Eo",
+    authDomain: "yorum-8b483.firebaseapp.com",
+    projectId: "yorum-8b483",
+    storageBucket: "yorum-8b483.firebasestorage.app",
+    messagingSenderId: "331392423628",
+    appId: "1:331392423628:web:9a4b54b64217b06c91d469"
+  };
+
+  // Firebase'i başlat (eğer yoksa)
+  const existingApps = getApps();
+  const shopApp = existingApps.find(a => a.name === '[DEFAULT]') || initializeApp(firebaseConfig);
+  const shopDb  = getFirestore(shopApp);
+  const shopAuth = getAuth(shopApp);
+  const productsCol = collection(shopDb, 'products');
+
+  // Ana sayfaya dön fonksiyonu
+  window.closeShopSection = function() {
+    window.location.href = 'main.html';
+  }
+
+
+
+  // ── Durum ──
+  let shopProducts    = [];
+  let shopQuantities  = {};
+  let shopCart        = [];
+  let shopEditingId   = null;   // Firestore doc ID (string)
+  let shopPendingMain = null;
+  let shopPendingModal= null;
+  let shopBarOpen     = false;
+
+  // ── Ürünleri Gerçek Zamanlı Dinle ──
+  function shopListenProducts() {
+    const q = query(productsCol, orderBy('createdAt', 'desc'));
+    onSnapshot(q, (snapshot) => {
+      shopProducts = snapshot.docs.map(d => ({ _docId: d.id, ...d.data() }));
+      shopRenderProducts();
+    }, async (error) => {
+      console.error('onSnapshot hatası:', error);
+      // onSnapshot başarısız olursa getDocs ile bir kez çek
+      try {
+        const snapshot = await getDocs(q);
+        shopProducts = snapshot.docs.map(d => ({ _docId: d.id, ...d.data() }));
+        shopRenderProducts();
+      } catch(e2) {
+        console.error('getDocs de başarısız:', e2);
+        shopRenderProducts(); // en azından boş grid göster
+      }
+    });
+  }
+
+  /* ── ADMIN BAR TOGGLE ── */
+  window.shopToggleAdminBar = function(){
+    const isAdmin = localStorage.getItem('almahayri_admin') === 'true';
+    if(!isAdmin) {
+      shopShowToast('يرجى تسجيل الدخول من الصفحة الرئيسية أولاً');
+      return;
+    }
+    shopBarOpen = !shopBarOpen;
+    document.getElementById('shopToggleIcon').style.transform = shopBarOpen ? 'rotate(180deg)' : '';
+    if(shopBarOpen){
+      document.getElementById('shopAdminPanel').classList.add('open');
+      document.getElementById('shop-section-wrapper').classList.add('shop-admin-mode');
+    } else {
+      document.getElementById('shopAdminPanel').classList.remove('open');
+    }
+  }
+
+  /* ── ADMIN AUTH ── */
+  window.shopAdminLogout = function(){
+    shopBarOpen = false;
+    localStorage.removeItem('almahayri_admin');
+    document.getElementById('shop-section-wrapper').classList.remove('shop-admin-mode');
+    document.getElementById('shopAdminPanel').classList.remove('open');
+    document.getElementById('shopToggleIcon').style.transform='';
+    shopShowToast('تم تسجيل الخروج');
+  }
+
+  /* ── IMAGE PREVIEWS + DRAG & DROP ── */
+  function shopReadFile(file, callback){
+    if(!file || !file.type.startsWith('image/')) return;
+    const r = new FileReader();
+    r.onload = e => callback(e.target.result);
+    r.readAsDataURL(file);
+  }
+
+  window.shopPreviewMain = function(input){
+    shopReadFile(input.files[0], data => {
+      shopPendingMain = data;
+      const a = document.getElementById('shopMainUpload');
+      a.innerHTML = `<input type="file" id="shopMainImg" accept="image/*" onchange="shopPreviewMain(this)"><img src="${shopPendingMain}" class="shop-upload-preview">`;
+      shopSetupDrag('shopMainUpload','main');
+    });
+  }
+
+  window.shopPreviewModal = function(input){
+    shopReadFile(input.files[0], data => {
+      shopPendingModal = data;
+      const a = document.getElementById('shopModalUpload');
+      a.innerHTML = `<input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)"><img src="${shopPendingModal}" class="shop-modal-preview">`;
+      shopSetupDrag('shopModalUpload','modal');
+    });
+  }
+
+  function shopSetupDrag(areaId, type){
+    const el = document.getElementById(areaId);
+    if(!el || el._dragReady) return;
+    el._dragReady = true;
+    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+    el.addEventListener('dragleave', e => { if(!el.contains(e.relatedTarget)) el.classList.remove('drag-over'); });
+    el.addEventListener('drop', e => {
+      e.preventDefault(); el.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if(!file || !file.type.startsWith('image/')){ shopShowToast('⚠️ يرجى إسقاط ملف صورة'); return; }
+      shopReadFile(file, data => {
+        if(type === 'main'){
+          shopPendingMain = data;
+          el.innerHTML = `<input type="file" id="shopMainImg" accept="image/*" onchange="shopPreviewMain(this)"><img src="${shopPendingMain}" class="shop-upload-preview">`;
+          shopSetupDrag('shopMainUpload','main');
+        } else {
+          shopPendingModal = data;
+          el.innerHTML = `<input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)"><img src="${shopPendingModal}" class="shop-modal-preview">`;
+          shopSetupDrag('shopModalUpload','modal');
+        }
+      });
+    });
+  }
+
+  /* ── TELEGRAM ── */
+  let shopTgToken  = '';
+  let shopTgChatId = '';
+
+  // Firebase'den shop Telegram ayarlarını yükle
+  async function loadShopTgSettings() {
+    try {
+      const { getDoc, doc: fsDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      const snap = await getDoc(fsDoc(shopDb, 'settings', 'shop_telegram'));
+      if (snap.exists()) {
+        const data = snap.data();
+        shopTgToken  = data.token  || '';
+        shopTgChatId = data.chatId || '';
+        const tokenEl = document.getElementById('shopTgToken');
+        const chatEl  = document.getElementById('shopTgChatId');
+        if (tokenEl)  tokenEl.value  = shopTgToken;
+        if (chatEl)   chatEl.value   = shopTgChatId;
+      }
+    } catch(e) { console.error('Shop TG ayarları yüklenemedi:', e); }
+  }
+  loadShopTgSettings();
+
+  window.shopSaveTgSettings = async function(){
+    shopTgToken  = document.getElementById('shopTgToken').value.trim();
+    shopTgChatId = document.getElementById('shopTgChatId').value.trim();
+    if(!shopTgToken || !shopTgChatId){ shopShowTgStatus('⚠️ يرجى إدخال Token و Chat ID','err'); return; }
+    try {
+      const { setDoc, doc: fsDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      await setDoc(fsDoc(shopDb, 'settings', 'shop_telegram'), {
+        token:  shopTgToken,
+        chatId: shopTgChatId
+      });
+    } catch(e) { console.error('Shop TG ayarları kaydedilemedi:', e); }
+    shopSendTelegram('✅ اختبار ناجح! ستصلك الطلبات على هذا البوت.').then(ok => {
+      shopShowTgStatus(ok ? '✓ تم الحفظ والاختبار بنجاح' : '✗ فشل الاتصال — تحقق من Token والـ Chat ID', ok ? 'ok' : 'err');
+    });
+  }
+
+  function shopShowTgStatus(msg, cls){
+    const s = document.getElementById('shopTgStatus');
+    s.textContent = msg; s.className = 'shop-tg-status ' + cls;
+  }
+
+  async function shopSendTelegram(text){
+    if(!shopTgToken || !shopTgChatId) return false;
+    try{
+      const res = await fetch(`https://api.telegram.org/bot${shopTgToken}/sendMessage`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id: shopTgChatId, text, parse_mode: 'HTML' })
+      });
+      const d = await res.json();
+      return d.ok;
+    } catch { return false; }
+  }
+
+  /* ── ADD — Firestore'a kaydet ── */
+  window.shopAddProduct = async function(){
+    const text = document.getElementById('shopMainText').value.trim();
+    if(!text){ shopShowToast('يرجى كتابة وصف المنتج'); return; }
+    const price = parseFloat(document.getElementById('shopMainPrice').value) || 0;
+
+    const btn = document.querySelector('.shop-btn-add-product');
+    if(btn){ btn.disabled = true; btn.textContent = '...جارٍ الإضافة'; }
+
+    try {
+      await addDoc(productsCol, {
+        text,
+        price,
+        image: shopPendingMain || null,
+        createdAt: Date.now()
+      });
+      shopShowToast('✓ تمت إضافة المنتج');
+      document.getElementById('shopMainText').value  = '';
+      document.getElementById('shopMainPrice').value = '';
+      shopPendingMain = null;
+      document.getElementById('shopMainUpload').innerHTML =
+        `<input type="file" id="shopMainImg" accept="image/*" onchange="shopPreviewMain(this)"><span class="shop-upload-icon">📷</span><span class="shop-upload-hint">اضغط أو اسحب الصورة</span>`;
+      shopSetupDrag('shopMainUpload','main');
+    } catch(e) {
+      shopShowToast('⚠️ حدث خطأ أثناء الإضافة');
+      console.error(e);
+    }
+
+    if(btn){ btn.disabled = false; btn.textContent = '+ إضافة'; }
+  }
+
+  /* ── DELETE — Firestore'dan sil ── */
+  window.shopDeleteProduct = async function(docId){
+    if(!confirm('هل تريد حذف هذا المنتج؟')) return;
+    try {
+      await deleteDoc(doc(shopDb, 'products', docId));
+      shopCart = shopCart.filter(c => c._docId !== docId);
+      shopUpdateCartUI();
+      shopShowToast('تم حذف المنتج');
+    } catch(e) {
+      shopShowToast('⚠️ فشل الحذف');
+      console.error(e);
+    }
+  }
+
+  /* ── EDIT — modal aç ── */
+  window.shopOpenEdit = function(docId){
+    shopEditingId  = docId;
+    shopPendingModal = null;
+    const p = shopProducts.find(x => x._docId === docId);
+    if(!p) return;
+    document.getElementById('shopModalText').value  = p.text;
+    document.getElementById('shopModalPrice').value = p.price || '';
+    const a = document.getElementById('shopModalUpload');
+    if(p.image)
+      a.innerHTML = `<input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)"><img src="${p.image}" class="shop-modal-preview">`;
+    else
+      a.innerHTML = `<input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)"><span class="shop-upload-icon">📷</span><span class="shop-upload-hint">اضغط لتغيير الصورة</span>`;
+    document.getElementById('shopEditModal').classList.add('open');
+    setTimeout(() => shopSetupDrag('shopModalUpload','modal'), 50);
+  }
+
+  window.shopCloseModal = function(){
+    document.getElementById('shopEditModal').classList.remove('open');
+    shopEditingId = null; shopPendingModal = null;
+  }
+
+  /* ── SAVE EDIT — Firestore'u güncelle ── */
+  window.shopSaveEdit = async function(){
+    const text = document.getElementById('shopModalText').value.trim();
+    if(!text){ shopShowToast('الوصف لا يمكن أن يكون فارغاً'); return; }
+
+    const saveBtn = document.querySelector('.shop-btn-save');
+    if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = '...جارٍ الحفظ'; }
+
+    const updates = {
+      text,
+      price: parseFloat(document.getElementById('shopModalPrice').value) || 0
+    };
+    if(shopPendingModal) updates.image = shopPendingModal;
+
+    try {
+      await updateDoc(doc(shopDb, 'products', shopEditingId), updates);
+      shopCloseModal();
+      shopShowToast('✓ تم حفظ التغييرات');
+    } catch(e) {
+      shopShowToast('⚠️ فشل حفظ التغييرات');
+      console.error(e);
+    }
+
+    if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = '💾 حفظ'; }
+  }
+
+  document.getElementById('shopEditModal').addEventListener('click', e => {
+    if(e.target === document.getElementById('shopEditModal')) shopCloseModal();
+  });
+
+  /* ── QTY ── */
+  window.shopChangeQty = function(docId, d){
+    if(!shopQuantities[docId]) shopQuantities[docId] = 1;
+    shopQuantities[docId] = Math.max(1, shopQuantities[docId] + d);
+    const el = document.getElementById('shop-qty-' + docId);
+    if(el) el.textContent = shopQuantities[docId];
+  }
+
+  /* ── CART ── */
+  window.shopAddToCart = function(docId){
+    const p   = shopProducts.find(x => x._docId === docId);
+    const qty = shopQuantities[docId] || 1;
+    const ex  = shopCart.find(c => c._docId === docId);
+    if(ex) ex.qty += qty;
+    else   shopCart.push({ _docId: docId, text: p.text, image: p.image, qty, price: p.price || 0 });
+    shopQuantities[docId] = 1;
+    const el = document.getElementById('shop-qty-' + docId);
+    if(el) el.textContent = 1;
+    shopUpdateCartUI(); shopShowToast('✓ أُضيف إلى السلة');
+  }
+
+  window.shopRemoveFromCart = function(docId){
+    shopCart = shopCart.filter(c => c._docId !== docId);
+    shopUpdateCartUI();
+  }
+
+  window.shopUpdateCartUI = function(){
+    const total = shopCart.reduce((s,c) => s + c.qty, 0);
+    const badge = document.getElementById('shopCartBadge');
+    badge.textContent = total;
+    badge.classList.add('pop');
+    setTimeout(() => badge.classList.remove('pop'), 300);
+    document.getElementById('shopDrawerTotal').textContent = total + ' عنصر';
+
+    document.getElementById('shopCustomerInfoSection').style.display = shopCart.length ? 'block' : 'none';
+
+    const di = document.getElementById('shopDrawerItems');
+    if(!shopCart.length){ di.innerHTML = `<div class="shop-drawer-empty">🛒 السلة فارغة</div>`; return; }
+    di.innerHTML = shopCart.map(c => `
+      <div class="shop-drawer-item">
+        <div class="shop-di-img">${c.image ? `<img src="${c.image}">` : '📦'}</div>
+        <div class="shop-di-info">
+          <div class="shop-di-name">${shopEscHtml(c.text)}</div>
+          <div class="shop-di-qty">الكمية: ${c.qty}</div>
+        </div>
+        <button class="shop-di-rm" onclick="shopRemoveFromCart('${c._docId}')">✕</button>
+      </div>`).join('');
+  }
+
+  window.shopToggleCart = function(){
+    document.getElementById('shopCartOverlay').classList.toggle('open');
+    document.getElementById('shopCartDrawer').classList.toggle('open');
+  }
+
+  window.shopCheckout = function(){
+    if(!shopCart.length){ shopShowToast('السلة فارغة!'); return; }
+
+    const name    = document.getElementById('shopCiName').value.trim();
+    const phone   = document.getElementById('shopCiPhone').value.trim();
+    const address = document.getElementById('shopCiAddress').value.trim();
+    let valid = true;
+
+    const cfName    = document.getElementById('shop-cf-name');
+    const cfPhone   = document.getElementById('shop-cf-phone');
+    const cfAddress = document.getElementById('shop-cf-address');
+    cfName.classList.remove('error');
+    cfPhone.classList.remove('error');
+    cfAddress.classList.remove('error');
+
+    if(!name){ cfName.classList.add('error'); valid = false; }
+    if(!phone || phone.replace(/\D/g,'').length < 7){ cfPhone.classList.add('error'); valid = false; }
+    if(!address){ cfAddress.classList.add('error'); valid = false; }
+
+    if(!valid){
+      shopShowToast('⚠️ يرجى تعبئة جميع الحقول المطلوبة');
+      document.getElementById('shopCustomerInfoSection').scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+
+    const itemLines = shopCart.map(c =>
+      `  • ${c.text}${c.price ? ' (' + c.price.toFixed(2) + '$)' : ''} — الكمية: ${c.qty}`
+    ).join('\n');
+
+    const tgMsg =
+`🛒 <b>طلب جديد!</b>
+
+👤 <b>الاسم:</b> ${name}
+📞 <b>الهاتف:</b> ${phone}
+📍 <b>العنوان:</b> ${address}
+
+📦 <b>المنتجات:</b>
+${itemLines}
+
+🔢 <b>إجمالي العناصر:</b> ${shopCart.reduce((s,c) => s + c.qty, 0)}`;
+
+    shopSendTelegram(tgMsg);
+    shopShowToast(`✓ تم تأكيد طلبك يا ${name}! شكراً لك`);
+    shopCart = [];
+    document.getElementById('shopCiName').value    = '';
+    document.getElementById('shopCiPhone').value   = '';
+    document.getElementById('shopCiAddress').value = '';
+    shopUpdateCartUI(); shopToggleCart();
+  }
+
+  /* ── RENDER ── */
+  window.shopRenderProducts = function(){
+    const grid = document.getElementById('shopProductsGrid');
+    document.getElementById('shopCountPill').textContent = shopProducts.length + ' منتج';
+    if(!shopProducts.length){
+      grid.innerHTML = `<div class="shop-empty-state"><div class="shop-empty-state-icon">🌱</div><h3 style="font-family:'Amiri',serif;font-size:1.4rem;margin-bottom:8px;">لا توجد منتجات بعد</h3><p style="font-size:.9rem;">قم بإضافة منتجات من لوحة المشرف</p></div>`;
+      return;
+    }
+    const isAdmin = localStorage.getItem('almahayri_admin') === 'true';
+    grid.innerHTML = shopProducts.map((p, i) => `
+      <div class="shop-product-card" style="animation-delay:${i*0.07}s">
+        ${p.image
+          ? `<div class="shop-card-img-wrap"><img src="${p.image}" alt="منتج"></div>`
+          : `<div class="shop-card-img-placeholder">📦</div>`}
+        <div class="shop-card-body">
+          <div class="shop-card-text">${shopEscHtml(p.text)}</div>
+          ${p.price ? `<div class="shop-card-price"><span>السعر</span> ${p.price.toFixed(2)} $</div>` : ''}
+          <div class="shop-qty-row">
+            <span class="shop-qty-label">الكمية</span>
+            <div class="shop-qty-controls">
+              <button class="shop-qty-btn" onclick="shopChangeQty('${p._docId}',1)">+</button>
+              <span class="shop-qty-value" id="shop-qty-${p._docId}">${shopQuantities[p._docId]||1}</span>
+              <button class="shop-qty-btn" onclick="shopChangeQty('${p._docId}',-1)">−</button>
+            </div>
+          </div>
+          <button class="shop-btn-add-cart" onclick="shopAddToCart('${p._docId}')">🛒 أضف إلى السلة</button>
+          <div class="shop-card-admin-actions">
+            <button class="shop-btn-edit-card" onclick="shopOpenEdit('${p._docId}')">✏️ تعديل</button>
+            <button class="shop-btn-del-card"  onclick="shopDeleteProduct('${p._docId}')">🗑 حذف</button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  /* ── TOAST ── */
+  function shopShowToast(msg){
+    const t = document.getElementById('shopToast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function shopEscHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  // Validation temizleme
+  ['shopCiName','shopCiPhone','shopCiAddress'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', () => {
+      el.closest('.shop-ci-field').classList.remove('error');
+    });
+  });
+
+  // Drag-and-drop başlat
+  shopSetupDrag('shopMainUpload','main');
+  shopSetupDrag('shopModalUpload','modal');
+
+  // Firebase'den ürünleri dinlemeye başla
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', shopListenProducts);
+  } else {
+    shopListenProducts();
+  }
+</script>
+
+<script type="module">
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, deleteDoc, doc,
+    updateDoc, query, orderBy, onSnapshot, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  /* ── Firebase'i mevcut instance'dan al ── */
+  let annApp;
+  const existingApps = getApps();
+  const namedApp = existingApps.find(a => a.name === '[DEFAULT]');
+  if (namedApp) { annApp = namedApp; }
+  else {
+    annApp = initializeApp({
+      apiKey: "AIzaSyDJ1_f4PIHcMS2qsHRx-0PCaxRkebDI9Eo",
+      authDomain: "yorum-8b483.firebaseapp.com",
+      projectId: "yorum-8b483",
+      storageBucket: "yorum-8b483.firebasestorage.app",
+      messagingSenderId: "331392423628",
+      appId: "1:331392423628:web:9a4b54b64217b06c91d469"
+    }, 'ann');
+  }
+  const annDb = getFirestore(annApp);
+
+  /* ── State ── */
+  let annEditingId   = null;
+  let annSelectedColor = 'gold';
+  let annSelectedIcon  = '🚚';
+  let annEditColor   = 'gold';
+  let annEditIcon    = '🚚';
+
+  /* ── Firestore realtime listener ── */
+  function annListen() {
+    const q = query(collection(annDb, 'announcements'), orderBy('createdAt', 'asc'));
+    onSnapshot(q, snap => {
+      const grid = document.getElementById('annGrid');
+      if (!grid) return;
+      if (!snap.docs.length) { grid.innerHTML = ''; return; }
+      grid.innerHTML = snap.docs.map((d, i) => {
+        const a = d.data();
+        return `<div class="ann-card ann-${a.color||'gold'}" style="animation-delay:${i*0.09}s" id="ann-card-${d.id}">
+          ${a.icon ? `<span class="ann-icon">${a.icon}</span>` : ''}
+          <span class="ann-text">${annEsc(a.text)}</span>
+          <button class="ann-edit-btn" onclick="annOpenEdit('${d.id}')">✏️ تعديل</button>
+          <button class="ann-del-btn"  onclick="annDelete('${d.id}')">✕ حذف</button>
+        </div>`;
+      }).join('');
+    });
+  }
+
+  /* ── Add ── */
+  window.annAddAnnouncement = async function() {
+    const text = (document.getElementById('annText')||{}).value?.trim();
+    if (!text) { shopShowToast && shopShowToast('⚠️ يرجى كتابة نص الإعلان'); return; }
+    const btn = document.querySelector('.ann-btn-add');
+    if (btn) { btn.disabled = true; btn.innerHTML = '...جارٍ النشر'; }
+    try {
+      const auth = getAuth(annApp);
+      const user = auth.currentUser;
+      if (!user) {
+        shopShowToast && shopShowToast('⚠️ يجب تسجيل الدخول أولاً');
+        return;
+      }
+      await addDoc(collection(annDb, 'announcements'), {
+        text, color: annSelectedColor, icon: annSelectedIcon,
+        createdAt: serverTimestamp()
+      });
+      document.getElementById('annText').value = '';
+      if (window.shopShowToast) shopShowToast('✓ تم نشر الإعلان');
+    } catch(e) {
+      if (window.shopShowToast) shopShowToast('⚠️ فشل النشر');
+      console.error(e);
+    }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span>+</span> نشر الإعلان'; }
+  };
+
+  /* ── Delete ── */
+  window.annDelete = async function(docId) {
+    if (!confirm('هل تريد حذف هذا الإعلان؟')) return;
+    try {
+      await deleteDoc(doc(annDb, 'announcements', docId));
+      if (window.shopShowToast) shopShowToast('تم حذف الإعلان');
+    } catch(e) {
+      if (window.shopShowToast) shopShowToast('⚠️ فشل الحذف');
+    }
+  };
+
+  /* ── Open edit modal ── */
+  window.annOpenEdit = function(docId) {
+    const card = document.getElementById('ann-card-' + docId);
+    if (!card) return;
+    annEditingId = docId;
+    const rawText = card.querySelector('.ann-text').innerHTML
+      .replace(/<br>/g,'\n').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+    const colorCls = [...card.classList].find(c => c.startsWith('ann-') && c !== 'ann-card');
+    annEditColor = colorCls ? colorCls.replace('ann-','') : 'gold';
+    annEditIcon  = card.querySelector('.ann-icon').textContent.trim();
+
+    document.getElementById('annEditText').value = rawText;
+
+    document.getElementById('annEditColorPicker')
+      .querySelectorAll('.ann-color-opt').forEach(b =>
+        b.classList.toggle('selected', b.dataset.color === annEditColor));
+    document.getElementById('annEditIconPicker')
+      .querySelectorAll('.ann-icon-opt').forEach(b =>
+        b.classList.toggle('selected', b.dataset.icon === annEditIcon));
+
+    document.getElementById('annEditModal').classList.add('open');
+    setupEditPickers();
+  };
+
+  window.annCloseEditModal = function() {
+    document.getElementById('annEditModal').classList.remove('open');
+    annEditingId = null;
+  };
+
+  /* ── Save edit ── */
+  window.annSaveEdit = async function() {
+    const text = document.getElementById('annEditText').value.trim();
+    if (!text) { if(window.shopShowToast) shopShowToast('⚠️ النص فارغ'); return; }
+    const btn = document.querySelector('#annEditModal .shop-btn-save');
+    if (btn) { btn.disabled = true; btn.textContent = '...جارٍ الحفظ'; }
+    try {
+      await updateDoc(doc(annDb, 'announcements', annEditingId),
+        { text, color: annEditColor, icon: annEditIcon });
+      annCloseEditModal();
+      if (window.shopShowToast) shopShowToast('✓ تم حفظ الإعلان');
+    } catch(e) {
+      if (window.shopShowToast) shopShowToast('⚠️ فشل الحفظ');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '💾 حفظ التغييرات'; }
+  };
+
+  /* ── Backdrop click ── */
+  document.getElementById('annEditModal').addEventListener('click', e => {
+    if (e.target.id === 'annEditModal') annCloseEditModal();
+  });
+
+  /* ── Picker setup (add form) ── */
+  function setupAddPickers() {
+    document.querySelectorAll('#shopAdminPanel .ann-color-picker .ann-color-opt').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#shopAdminPanel .ann-color-picker .ann-color-opt')
+          .forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        annSelectedColor = btn.dataset.color;
+      };
+    });
+    document.querySelectorAll('#shopAdminPanel .ann-icon-picker .ann-icon-opt').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#shopAdminPanel .ann-icon-picker .ann-icon-opt')
+          .forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        annSelectedIcon = btn.dataset.icon;
+      };
+    });
+  }
+
+  /* ── Picker setup (edit modal) ── */
+  function setupEditPickers() {
+    document.getElementById('annEditColorPicker').querySelectorAll('.ann-color-opt').forEach(btn => {
+      btn.onclick = () => {
+        document.getElementById('annEditColorPicker')
+          .querySelectorAll('.ann-color-opt').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        annEditColor = btn.dataset.color;
+      };
+    });
+    document.getElementById('annEditIconPicker').querySelectorAll('.ann-icon-opt').forEach(btn => {
+      btn.onclick = () => {
+        document.getElementById('annEditIconPicker')
+          .querySelectorAll('.ann-icon-opt').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        annEditIcon = btn.dataset.icon;
+      };
+    });
+  }
+
+  function annEsc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  /* ── Başlat ── */
+  annListen();
+  setupAddPickers();
+</script>
+
+</body>
+</html>
