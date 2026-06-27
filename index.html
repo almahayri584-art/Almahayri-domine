@@ -1,0 +1,739 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALMAHAYRI – مكعبات عشبية</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+  :root {
+    --green-dark:  #1a4a2e;
+    --green-mid:   #2d6a4f;
+    --green:       #3a8a62;
+    --green-light: #74c69d;
+    --green-pale:  #d8f3dc;
+    --cream:       #faf7f0;
+    --gold:        #c9952a;
+    --gold-light:  #e8c062;
+    --gold-pale:   #fdf3dc;
+    --text-dark:   #1a2e1a;
+    --white:       #ffffff;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(160deg, var(--green-dark) 0%, var(--green-mid) 55%, #1e5c3a 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Background bokeh */
+  body::before {
+    content: '';
+    position: fixed;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(116,198,157,0.15) 0%, transparent 70%);
+    top: -150px; right: -150px;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,149,42,0.1) 0%, transparent 70%);
+    bottom: -100px; left: -100px;
+    pointer-events: none;
+  }
+
+  /* Pattern overlay */
+  .bg-pattern {
+    position: fixed; inset: 0;
+    opacity: 0.03;
+    background-image:
+      repeating-linear-gradient(60deg, var(--gold-light) 0, var(--gold-light) 1px, transparent 1px, transparent 48px),
+      repeating-linear-gradient(-60deg, var(--gold-light) 0, var(--gold-light) 1px, transparent 1px, transparent 48px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Main card */
+  .card {
+    position: relative;
+    z-index: 1;
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(201,149,42,0.25);
+    border-radius: 32px;
+    padding: 52px 48px 48px;
+    max-width: 480px;
+    width: calc(100% - 48px);
+    text-align: center;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.3);
+    animation: fadeUp 0.7s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(24px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* Logo */
+  .logo-wrap {
+    margin-bottom: 8px;
+  }
+
+  .logo-wrap img {
+    width: min(320px, 78vw);
+    height: auto;
+    filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
+  }
+
+  /* Gold divider */
+  .gold-line {
+    width: 80px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 18px auto 28px;
+  }
+
+  /* Tagline */
+  .tagline {
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+    font-weight: 500;
+  }
+
+  /* Buttons container */
+  .buttons-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Button base */
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 17px 28px;
+    border-radius: 16px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.28s ease;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .action-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.2s;
+  }
+  .action-btn:hover::before { background: rgba(255,255,255,0.07); }
+  .action-btn:active { transform: scale(0.98); }
+
+  /* Website button */
+  .btn-website {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.92);
+    border: 1.5px solid rgba(255,255,255,0.2);
+  }
+  .btn-website:hover {
+    background: rgba(255,255,255,0.16);
+    border-color: rgba(255,255,255,0.35);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  }
+
+  /* Buy button */
+  .btn-buy {
+    background: linear-gradient(135deg, #3dd175, #29a84f);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(61,209,117,0.4);
+    animation: buy-pulse 2.4s infinite;
+  }
+
+  @keyframes buy-pulse {
+    0%,100% { box-shadow: 0 6px 24px rgba(61,209,117,0.4); }
+    50%      { box-shadow: 0 6px 36px rgba(61,209,117,0.65), 0 0 0 8px rgba(61,209,117,0.1); }
+  }
+
+  .btn-buy:hover {
+    transform: translateY(-4px);
+    animation: none;
+    box-shadow: 0 14px 40px rgba(61,209,117,0.5);
+  }
+
+  /* Custom buttons (added by admin) */
+  .btn-custom {
+    background: rgba(201,149,42,0.15);
+    color: var(--gold-light);
+    border: 1.5px solid rgba(201,149,42,0.4);
+  }
+  .btn-custom:hover {
+    background: rgba(201,149,42,0.28);
+    border-color: var(--gold);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(201,149,42,0.2);
+  }
+
+  /* Button icon */
+  .btn-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  /* Admin floating button */
+  .admin-fab {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    z-index: 100;
+    background: rgba(15,40,25,0.85);
+    border: 1px solid rgba(201,149,42,0.3);
+    border-radius: 50px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+    display: none;
+  }
+  .admin-fab:hover { color: var(--gold-light); border-color: rgba(201,149,42,0.6); }
+  .admin-fab.visible { display: flex; }
+
+  /* Admin panel modal backdrop */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  /* Admin panel */
+  .admin-panel {
+    background: #0d2618;
+    border: 1px solid rgba(201,149,42,0.3);
+    border-radius: 24px;
+    padding: 32px;
+    width: 100%;
+    max-width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+    animation: fadeUp 0.3s ease;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .panel-title {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--gold-light);
+  }
+
+  .panel-close {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: rgba(255,255,255,0.5);
+    font-size: 18px;
+    transition: all 0.2s;
+  }
+  .panel-close:hover { background: rgba(239,68,68,0.15); color: #f87171; }
+
+  /* Existing buttons list */
+  .btn-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+
+  .btn-list-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+
+  .btn-list-icon { font-size: 18px; flex-shrink: 0; }
+
+  .btn-list-info { flex: 1; min-width: 0; text-align: right; }
+
+  .btn-list-label {
+    font-size: 13px; font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    display: block;
+  }
+
+  .btn-list-url {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    direction: ltr;
+    text-align: left;
+  }
+
+  .btn-list-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .list-action-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    transition: all 0.2s;
+  }
+  .list-action-btn.edit:hover { background: rgba(201,149,42,0.15); color: var(--gold-light); border-color: rgba(201,149,42,0.3); }
+  .list-action-btn.del:hover  { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
+
+  .locked-badge {
+    font-size: 10px;
+    background: rgba(116,198,157,0.12);
+    color: var(--green-light);
+    border: 1px solid rgba(116,198,157,0.25);
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-weight: 700;
+  }
+
+  /* Add button form */
+  .add-form-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+
+  .form-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .form-input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: white;
+    font-family: 'Cairo', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: rtl;
+    width: 100%;
+  }
+  .form-input:focus { border-color: rgba(201,149,42,0.5); }
+  .form-input::placeholder { color: rgba(255,255,255,0.25); }
+  .form-input[dir="ltr"] { direction: ltr; text-align: left; }
+
+  .icon-picker {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+
+  .icon-opt {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .icon-opt:hover { background: rgba(201,149,42,0.15); border-color: rgba(201,149,42,0.4); }
+  .icon-opt.selected { background: rgba(201,149,42,0.25); border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,149,42,0.2); }
+
+  .save-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: #0f3320;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.25s;
+    box-shadow: 0 4px 16px rgba(201,149,42,0.35);
+  }
+  .save-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,149,42,0.45); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 50%;
+    transform: translateX(50%) translateY(20px);
+    background: rgba(15,40,25,0.95);
+    border: 1px solid rgba(201,149,42,0.3);
+    color: var(--gold-light);
+    font-family: 'Cairo', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px 24px;
+    border-radius: 50px;
+    z-index: 999;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(50%) translateY(0); }
+
+  /* Loading state */
+  .loading-dots {
+    display: flex; gap: 6px; justify-content: center; padding: 24px 0;
+  }
+  .loading-dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(201,149,42,0.5);
+    animation: dot-bounce 1.2s infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dot-bounce {
+    0%,100% { transform: translateY(0); opacity:.5; }
+    50%      { transform: translateY(-6px); opacity:1; }
+  }
+
+  @media(max-width: 480px) {
+    .card { padding: 40px 24px 36px; }
+    .admin-panel { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-pattern"></div>
+
+<div class="card">
+  <div class="logo-wrap">
+    <img
+      src="https://raw.githubusercontent.com/almahayri584-art/Almahayri/main/logo.png"
+      onerror="this.onerror=null; this.style.display='none'; document.getElementById('logo-fallback').style.display='block';"
+      alt="ALMAHAYRI"
+    >
+    <div id="logo-fallback" style="display:none; font-family:'Tajawal',sans-serif; font-size:38px; font-weight:900; background:linear-gradient(135deg,#3dd175,#c9952a); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; letter-spacing:2px;">ALMAHAYRI</div>
+  </div>
+
+  <div class="gold-line"></div>
+
+  <p class="tagline">مكعبات أعشاب طبيعية</p>
+
+  <div class="buttons-wrap" id="buttons-wrap">
+    <div class="loading-dots">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</div>
+
+<!-- Admin FAB -->
+<button class="admin-fab" id="admin-fab" onclick="openPanel()">
+  ⚙️ <span>إدارة الأزرار</span>
+</button>
+
+<!-- Admin Panel Modal -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="admin-panel" id="admin-panel">
+    <div class="panel-header">
+      <div class="panel-title">⚙️ إدارة الأزرار</div>
+      <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
+
+    <div id="admin-btn-list" class="btn-list">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="add-form-title">إضافة / تعديل زر</div>
+
+    <div class="form-field">
+      <label class="form-label">نص الزر</label>
+      <input class="form-input" id="f-label" type="text" placeholder="مثال: تابعنا على انستغرام">
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">الرابط (URL)</label>
+      <input class="form-input" id="f-url" type="url" placeholder="https://..." dir="ltr">
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">الأيقونة</label>
+      <div class="icon-picker" id="icon-picker">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <input type="hidden" id="f-edit-id">
+
+    <button class="save-btn" onclick="saveCustomBtn()">💾 حفظ الزر</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase config — replace with your own -->
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDJ1_f4PIHcMS2qsHRx-0PCaxRkebDI9Eo",
+    authDomain: "yorum-8b483.firebaseapp.com",
+    projectId: "yorum-8b483",
+    storageBucket: "yorum-8b483.firebasestorage.app",
+    messagingSenderId: "331392423628",
+    appId: "1:331392423628:web:9a4b54b64217b06c91d469",
+    measurementId: "G-PND3P6J6Y4"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+
+  /* ───── FIXED BUTTONS (always shown, cannot be deleted) ───── */
+  const FIXED_BTNS = [
+    {
+      id: '__website__',
+      label: 'الموقع الرسمي',
+      url: 'https://almahayri584-art.github.io/Almahayri/main.html',
+      icon: '🌿',
+      type: 'website',
+      fixed: true,
+      order: -2
+    },
+    {
+      id: '__store__',
+      label: 'اشترِ الآن 🛒',
+      url: 'https://almahayri584-art.github.io/Almahayri/shop.html',
+      icon: '🛍️',
+      type: 'buy',
+      fixed: true,
+      order: -1
+    }
+  ];
+
+  const ICONS = ['📱','💬','📸','🐦','▶️','🌐','📧','📞','🛒','🎁','⭐','🔗','📍','💚','🤝','🌿'];
+
+  let customBtns = [];
+  let selectedIcon = '🔗';
+  let isAdmin = false;
+
+  /* ───── AUTH ───── */
+  auth.onAuthStateChanged(user => {
+    isAdmin = !!user;
+    document.getElementById('admin-fab').classList.toggle('visible', isAdmin);
+    renderButtons();
+    if (isAdmin) renderAdminList();
+  });
+
+  /* ───── FIRESTORE: load custom buttons ───── */
+  db.collection('redirect_buttons')
+    .orderBy('order', 'asc')
+    .onSnapshot(snap => {
+      customBtns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderButtons();
+      if (isAdmin) renderAdminList();
+    });
+
+  /* ───── RENDER MAIN BUTTONS ───── */
+  function renderButtons() {
+    const wrap = document.getElementById('buttons-wrap');
+    const all = [...FIXED_BTNS, ...customBtns].sort((a,b) => (a.order||0)-(b.order||0));
+    wrap.innerHTML = '';
+
+    all.forEach(btn => {
+      const a = document.createElement('a');
+      a.href = btn.url;
+      a.className = 'action-btn ' + (
+        btn.type === 'buy'     ? 'btn-buy'     :
+        btn.type === 'website' ? 'btn-website'  : 'btn-custom'
+      );
+      a.innerHTML = `<span class="btn-icon">${btn.icon}</span>${btn.label}`;
+      a.addEventListener('click', function() {
+        localStorage.removeItem('visited');
+      });
+      wrap.appendChild(a);
+    });
+  }
+
+  /* ───── ADMIN PANEL ───── */
+  function openPanel() {
+    renderAdminList();
+    renderIconPicker();
+    document.getElementById('modal-backdrop').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePanel() {
+    document.getElementById('modal-backdrop').classList.remove('open');
+    document.body.style.overflow = '';
+    clearForm();
+  }
+
+  document.getElementById('modal-backdrop').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-backdrop')) closePanel();
+  });
+
+  function renderIconPicker() {
+    const wrap = document.getElementById('icon-picker');
+    wrap.innerHTML = ICONS.map(ic =>
+      `<div class="icon-opt${ic===selectedIcon?' selected':''}" onclick="selectIcon('${ic}')">${ic}</div>`
+    ).join('');
+  }
+
+  function selectIcon(ic) {
+    selectedIcon = ic;
+    renderIconPicker();
+  }
+
+  function renderAdminList() {
+    const list = document.getElementById('admin-btn-list');
+    const all = [...FIXED_BTNS, ...customBtns];
+    list.innerHTML = all.map(btn => `
+      <div class="btn-list-item">
+        <span class="btn-list-icon">${btn.icon}</span>
+        <div class="btn-list-info">
+          <span class="btn-list-label">${btn.label}</span>
+          <span class="btn-list-url">${btn.url}</span>
+        </div>
+        <div class="btn-list-actions">
+          ${btn.fixed
+            ? '<span class="locked-badge">ثابت</span>'
+            : `<button class="list-action-btn edit" onclick="editBtn('${btn.id}')" title="تعديل">✏️</button>
+               <button class="list-action-btn del"  onclick="deleteBtn('${btn.id}')" title="حذف">🗑️</button>`
+          }
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function editBtn(id) {
+    const btn = customBtns.find(b => b.id === id);
+    if (!btn) return;
+    document.getElementById('f-label').value   = btn.label;
+    document.getElementById('f-url').value     = btn.url;
+    document.getElementById('f-edit-id').value = btn.id;
+    selectedIcon = btn.icon;
+    renderIconPicker();
+    document.getElementById('f-label').scrollIntoView({ behavior:'smooth' });
+  }
+
+  function clearForm() {
+    document.getElementById('f-label').value   = '';
+    document.getElementById('f-url').value     = '';
+    document.getElementById('f-edit-id').value = '';
+    selectedIcon = '🔗';
+    renderIconPicker();
+  }
+
+  async function saveCustomBtn() {
+    const label  = document.getElementById('f-label').value.trim();
+    const url    = document.getElementById('f-url').value.trim();
+    const editId = document.getElementById('f-edit-id').value;
+
+    if (!label) { showToast('❌ أدخل نص الزر'); return; }
+    if (!url)   { showToast('❌ أدخل الرابط');  return; }
+
+    const data = {
+      label,
+      url,
+      icon:  selectedIcon,
+      type:  'custom',
+      order: Date.now()
+    };
+
+    try {
+      if (editId) {
+        await db.collection('redirect_buttons').doc(editId).update(data);
+        showToast('✅ تم التعديل');
+      } else {
+        await db.collection('redirect_buttons').add(data);
+        showToast('✅ تمت الإضافة');
+      }
+      clearForm();
+    } catch(e) {
+      showToast('❌ خطأ: ' + e.message);
+    }
+  }
+
+  async function deleteBtn(id) {
+    if (!confirm('هل تريد حذف هذا الزر؟')) return;
+    try {
+      await db.collection('redirect_buttons').doc(id).delete();
+      showToast('🗑️ تم الحذف');
+    } catch(e) {
+      showToast('❌ ' + e.message);
+    }
+  }
+
+  /* ───── TOAST ───── */
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+</script>
+</body>
+</html>
