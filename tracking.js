@@ -12,7 +12,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 (function () {
-  const VISIT_THRESHOLD = 50; // kaç ziyarette bir otomatik rapor atılsın
+  const VISIT_THRESHOLD = 100; // kaç ziyarette bir otomatik rapor atılsın
 
   let tgToken = null;
   let tgChatId = null;
