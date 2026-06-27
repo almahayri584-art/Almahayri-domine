@@ -14,7 +14,7 @@ import {
   collection, doc, addDoc, getDoc, setDoc, getDocs, query, where, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const VISIT_THRESHOLD = 50;
+const VISIT_THRESHOLD = 100;
 
 export function initTrackingModule(db, pageName) {
   let tgToken = null;
