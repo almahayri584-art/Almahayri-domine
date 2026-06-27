@@ -7,6 +7,7 @@
 <title>ALMAHAYRI – مكعبات عشبية</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 
+<script src="tracking.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -495,6 +496,10 @@
 <button class="admin-fab" id="admin-fab" onclick="openPanel()">
   ⚙️ <span>إدارة الأزرار</span>
 </button>
+<!-- Admin Rapor Butonu -->
+<button class="admin-fab" id="report-btn" onclick="handleManualReport()" style="bottom:80px;">
+  📊 <span>إرسال تقرير</span>
+</button>
 
 <!-- Admin Panel Modal -->
 <div class="modal-backdrop" id="modal-backdrop">
@@ -550,6 +555,8 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db   = firebase.firestore();
+  initTracking('index');
+  
 
   /* ───── FIXED BUTTONS (always shown, cannot be deleted) ───── */
   const FIXED_BTNS = [
@@ -581,11 +588,12 @@
 
   /* ───── AUTH ───── */
   auth.onAuthStateChanged(user => {
-    isAdmin = !!user;
-    document.getElementById('admin-fab').classList.toggle('visible', isAdmin);
-    renderButtons();
-    if (isAdmin) renderAdminList();
-  });
+  isAdmin = !!user;
+  document.getElementById('admin-fab').classList.toggle('visible', isAdmin);
+  document.getElementById('report-btn').classList.toggle('visible', isAdmin);
+  renderButtons();
+  if (isAdmin) renderAdminList();
+});
 
   /* ───── FIRESTORE: load custom buttons ───── */
   db.collection('redirect_buttons')
@@ -611,8 +619,10 @@
       );
       a.innerHTML = `<span class="btn-icon">${btn.icon}</span>${btn.label}`;
       a.addEventListener('click', function() {
-        localStorage.removeItem('visited');
-      });
+  localStorage.removeItem('visited');
+  const trackType = btn.fixed ? btn.id.replace(/__/g, '') : 'custom_' + (btn.label || 'buton');
+  trackClick(trackType, btn.label);
+});
       wrap.appendChild(a);
     });
   }
@@ -734,6 +744,17 @@
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2800);
   }
+  window.handleManualReport = async function() {
+  const btn = document.getElementById('report-btn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ <span>...جارٍ الإرسال</span>';
+  const ok = await sendManualReport();
+  btn.innerHTML = ok ? '✅ <span>تم الإرسال</span>' : '❌ <span>فشل الإرسال</span>';
+  setTimeout(() => {
+    btn.innerHTML = '📊 <span>إرسال تقرير</span>';
+    btn.disabled = false;
+  }, 2500);
+}
 </script>
 </body>
 </html>
