@@ -8,7 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="main.css">
 <style>
-  /* Shop sayfasında body tam ekran shop wrapper gösterir */
   body { margin:0; padding:0; overflow-x:hidden; }
   .shop-section-wrapper {
     display: block !important;
@@ -17,11 +16,24 @@
     min-height: 100vh;
   }
 </style>
+<!-- Firebase Compat (tracking.js için) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyDJ1_f4PIHcMS2qsHRx-0PCaxRkebDI9Eo",
+    authDomain: "yorum-8b483.firebaseapp.com",
+    projectId: "yorum-8b483",
+    storageBucket: "yorum-8b483.firebasestorage.app",
+    messagingSenderId: "331392423628",
+    appId: "1:331392423628:web:9a4b54b64217b06c91d469"
+  });
+</script>
+<script src="tracking.js"></script>
 </head>
 <body>
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     SHOP SECTION - Embedded Store
-═══════════════════════════════════════════════════════════════════════════ -->
+
 <div class="shop-section-wrapper" id="shop-section-wrapper">
 
   <!-- Shop Header -->
@@ -44,7 +56,6 @@
     </div>
   </header>
 
-  <!-- Shop Hero (features removed) -->
   <div class="shop-hero" style="display:none;"></div>
 
   <!-- Announcements Strip -->
@@ -260,16 +271,18 @@
 
 </div>
 
-<!-- Shop JavaScript — Firebase entegrasyonlu -->
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TEK SCRIPT BLOĞU — Tüm Firebase işlemleri burada
+═══════════════════════════════════════════════════════════════════════ -->
 <script type="module">
   import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
     getFirestore, collection, addDoc, getDocs, deleteDoc, doc,
-    updateDoc, query, orderBy, onSnapshot, serverTimestamp
+    updateDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, setDoc
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-  // ── Firebase Config ──
+  // ── Firebase: tek instance ──
   const firebaseConfig = {
     apiKey: "AIzaSyDJ1_f4PIHcMS2qsHRx-0PCaxRkebDI9Eo",
     authDomain: "yorum-8b483.firebaseapp.com",
@@ -278,400 +291,316 @@
     messagingSenderId: "331392423628",
     appId: "1:331392423628:web:9a4b54b64217b06c91d469"
   };
+  const app  = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+  const db   = getFirestore(app);
+  const auth = getAuth(app);
 
-  // Firebase'i başlat (eğer yoksa)
-  const existingApps = getApps();
-  const shopApp = existingApps.find(a => a.name === '[DEFAULT]') || initializeApp(firebaseConfig);
-  const shopDb  = getFirestore(shopApp);
-  const shopAuth = getAuth(shopApp);
-  const productsCol = collection(shopDb, 'products');
+  const productsCol     = collection(db, 'products');
+  const announcementsCol = collection(db, 'announcements');
 
-  // Ana sayfaya dön fonksiyonu
-  window.closeShopSection = function() {
-    window.location.href = 'main.html';
-  }
+  // Tracking başlat
+  initTracking('shop');
 
+  // Ana sayfaya dön
+  window.closeShopSection = () => { window.location.href = 'main.html'; };
 
-
-  // ── Durum ──
+  // ════════════════════════════════════════════
+  // ÜRÜNLER
+  // ════════════════════════════════════════════
   let shopProducts    = [];
   let shopQuantities  = {};
   let shopCart        = [];
-  let shopEditingId   = null;   // Firestore doc ID (string)
+  let shopEditingId   = null;
   let shopPendingMain = null;
   let shopPendingModal= null;
   let shopBarOpen     = false;
 
-  // ── Ürünleri Gerçek Zamanlı Dinle ──
   function shopListenProducts() {
     const q = query(productsCol, orderBy('createdAt', 'desc'));
-    onSnapshot(q, (snapshot) => {
-      shopProducts = snapshot.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    onSnapshot(q, (snap) => {
+      shopProducts = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
       shopRenderProducts();
-    }, async (error) => {
-      console.error('onSnapshot hatası:', error);
-      // onSnapshot başarısız olursa getDocs ile bir kez çek
+    }, async (err) => {
+      console.error('onSnapshot hatası:', err);
       try {
-        const snapshot = await getDocs(q);
-        shopProducts = snapshot.docs.map(d => ({ _docId: d.id, ...d.data() }));
+        const snap = await getDocs(query(productsCol, orderBy('createdAt', 'desc')));
+        shopProducts = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
         shopRenderProducts();
-      } catch(e2) {
-        console.error('getDocs de başarısız:', e2);
-        shopRenderProducts(); // en azından boş grid göster
-      }
+      } catch(e2) { shopRenderProducts(); }
     });
   }
 
-  /* ── ADMIN BAR TOGGLE ── */
-  window.shopToggleAdminBar = function(){
-    const isAdmin = localStorage.getItem('almahayri_admin') === 'true';
-    if(!isAdmin) {
+  window.shopToggleAdminBar = function() {
+    if (localStorage.getItem('almahayri_admin') !== 'true') {
       shopShowToast('يرجى تسجيل الدخول من الصفحة الرئيسية أولاً');
       return;
     }
     shopBarOpen = !shopBarOpen;
     document.getElementById('shopToggleIcon').style.transform = shopBarOpen ? 'rotate(180deg)' : '';
-    if(shopBarOpen){
-      document.getElementById('shopAdminPanel').classList.add('open');
-      document.getElementById('shop-section-wrapper').classList.add('shop-admin-mode');
-    } else {
-      document.getElementById('shopAdminPanel').classList.remove('open');
-    }
+    document.getElementById('shopAdminPanel').classList.toggle('open', shopBarOpen);
+    document.getElementById('shop-section-wrapper').classList.toggle('shop-admin-mode', shopBarOpen);
   }
 
-  /* ── ADMIN AUTH ── */
-  window.shopAdminLogout = function(){
+  window.shopAdminLogout = function() {
     shopBarOpen = false;
     localStorage.removeItem('almahayri_admin');
     document.getElementById('shop-section-wrapper').classList.remove('shop-admin-mode');
     document.getElementById('shopAdminPanel').classList.remove('open');
-    document.getElementById('shopToggleIcon').style.transform='';
+    document.getElementById('shopToggleIcon').style.transform = '';
     shopShowToast('تم تسجيل الخروج');
   }
 
-  /* ── IMAGE PREVIEWS + DRAG & DROP ── */
-  function shopReadFile(file, callback){
-    if(!file || !file.type.startsWith('image/')) return;
+  function shopReadFile(file, cb) {
+    if (!file || !file.type.startsWith('image/')) return;
     const r = new FileReader();
-    r.onload = e => callback(e.target.result);
+    r.onload = e => cb(e.target.result);
     r.readAsDataURL(file);
   }
 
-  window.shopPreviewMain = function(input){
+  window.shopPreviewMain = function(input) {
     shopReadFile(input.files[0], data => {
       shopPendingMain = data;
       const a = document.getElementById('shopMainUpload');
       a.innerHTML = `<input type="file" id="shopMainImg" accept="image/*" onchange="shopPreviewMain(this)"><img src="${shopPendingMain}" class="shop-upload-preview">`;
-      shopSetupDrag('shopMainUpload','main');
+      shopSetupDrag('shopMainUpload', 'main');
     });
   }
 
-  window.shopPreviewModal = function(input){
+  window.shopPreviewModal = function(input) {
     shopReadFile(input.files[0], data => {
       shopPendingModal = data;
       const a = document.getElementById('shopModalUpload');
       a.innerHTML = `<input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)"><img src="${shopPendingModal}" class="shop-modal-preview">`;
-      shopSetupDrag('shopModalUpload','modal');
+      shopSetupDrag('shopModalUpload', 'modal');
     });
   }
 
-  function shopSetupDrag(areaId, type){
+  function shopSetupDrag(areaId, type) {
     const el = document.getElementById(areaId);
-    if(!el || el._dragReady) return;
+    if (!el || el._dragReady) return;
     el._dragReady = true;
     el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
-    el.addEventListener('dragleave', e => { if(!el.contains(e.relatedTarget)) el.classList.remove('drag-over'); });
+    el.addEventListener('dragleave', e => { if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over'); });
     el.addEventListener('drop', e => {
       e.preventDefault(); el.classList.remove('drag-over');
       const file = e.dataTransfer.files[0];
-      if(!file || !file.type.startsWith('image/')){ shopShowToast('⚠️ يرجى إسقاط ملف صورة'); return; }
+      if (!file || !file.type.startsWith('image/')) { shopShowToast('⚠️ يرجى إسقاط ملف صورة'); return; }
       shopReadFile(file, data => {
-        if(type === 'main'){
+        if (type === 'main') {
           shopPendingMain = data;
           el.innerHTML = `<input type="file" id="shopMainImg" accept="image/*" onchange="shopPreviewMain(this)"><img src="${shopPendingMain}" class="shop-upload-preview">`;
-          shopSetupDrag('shopMainUpload','main');
+          shopSetupDrag('shopMainUpload', 'main');
         } else {
           shopPendingModal = data;
           el.innerHTML = `<input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)"><img src="${shopPendingModal}" class="shop-modal-preview">`;
-          shopSetupDrag('shopModalUpload','modal');
+          shopSetupDrag('shopModalUpload', 'modal');
         }
       });
     });
   }
 
-  /* ── TELEGRAM ── */
-  let shopTgToken  = '';
-  let shopTgChatId = '';
+  // ── Telegram ──
+  let shopTgToken = '', shopTgChatId = '';
 
-  // Firebase'den shop Telegram ayarlarını yükle
   async function loadShopTgSettings() {
     try {
-      const { getDoc, doc: fsDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-      const snap = await getDoc(fsDoc(shopDb, 'settings', 'shop_telegram'));
+      const snap = await getDoc(doc(db, 'settings', 'shop_telegram'));
       if (snap.exists()) {
-        const data = snap.data();
-        shopTgToken  = data.token  || '';
-        shopTgChatId = data.chatId || '';
-        const tokenEl = document.getElementById('shopTgToken');
-        const chatEl  = document.getElementById('shopTgChatId');
-        if (tokenEl)  tokenEl.value  = shopTgToken;
-        if (chatEl)   chatEl.value   = shopTgChatId;
+        shopTgToken  = snap.data().token  || '';
+        shopTgChatId = snap.data().chatId || '';
+        const tEl = document.getElementById('shopTgToken');
+        const cEl = document.getElementById('shopTgChatId');
+        if (tEl) tEl.value = shopTgToken;
+        if (cEl) cEl.value = shopTgChatId;
       }
-    } catch(e) { console.error('Shop TG ayarları yüklenemedi:', e); }
+    } catch(e) { console.error('Shop TG yüklenemedi:', e); }
   }
   loadShopTgSettings();
 
-  window.shopSaveTgSettings = async function(){
+  window.shopSaveTgSettings = async function() {
     shopTgToken  = document.getElementById('shopTgToken').value.trim();
     shopTgChatId = document.getElementById('shopTgChatId').value.trim();
-    if(!shopTgToken || !shopTgChatId){ shopShowTgStatus('⚠️ يرجى إدخال Token و Chat ID','err'); return; }
-    try {
-      const { setDoc, doc: fsDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-      await setDoc(fsDoc(shopDb, 'settings', 'shop_telegram'), {
-        token:  shopTgToken,
-        chatId: shopTgChatId
-      });
-    } catch(e) { console.error('Shop TG ayarları kaydedilemedi:', e); }
+    if (!shopTgToken || !shopTgChatId) { shopShowTgStatus('⚠️ يرجى إدخال Token و Chat ID', 'err'); return; }
+    try { await setDoc(doc(db, 'settings', 'shop_telegram'), { token: shopTgToken, chatId: shopTgChatId }); }
+    catch(e) { console.error(e); }
     shopSendTelegram('✅ اختبار ناجح! ستصلك الطلبات على هذا البوت.').then(ok => {
       shopShowTgStatus(ok ? '✓ تم الحفظ والاختبار بنجاح' : '✗ فشل الاتصال — تحقق من Token والـ Chat ID', ok ? 'ok' : 'err');
     });
   }
 
-  function shopShowTgStatus(msg, cls){
+  function shopShowTgStatus(msg, cls) {
     const s = document.getElementById('shopTgStatus');
     s.textContent = msg; s.className = 'shop-tg-status ' + cls;
   }
 
-  async function shopSendTelegram(text){
-    if(!shopTgToken || !shopTgChatId) return false;
-    try{
+  async function shopSendTelegram(text) {
+    if (!shopTgToken || !shopTgChatId) return false;
+    try {
       const res = await fetch(`https://api.telegram.org/bot${shopTgToken}/sendMessage`, {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: shopTgChatId, text, parse_mode: 'HTML' })
       });
-      const d = await res.json();
-      return d.ok;
+      return (await res.json()).ok;
     } catch { return false; }
   }
 
-  /* ── ADD — Firestore'a kaydet ── */
-  window.shopAddProduct = async function(){
+  // ── CRUD ──
+  window.shopAddProduct = async function() {
     const text = document.getElementById('shopMainText').value.trim();
-    if(!text){ shopShowToast('يرجى كتابة وصف المنتج'); return; }
+    if (!text) { shopShowToast('يرجى كتابة وصف المنتج'); return; }
     const price = parseFloat(document.getElementById('shopMainPrice').value) || 0;
-
     const btn = document.querySelector('.shop-btn-add-product');
-    if(btn){ btn.disabled = true; btn.textContent = '...جارٍ الإضافة'; }
-
+    if (btn) { btn.disabled = true; btn.textContent = '...جارٍ الإضافة'; }
     try {
-      await addDoc(productsCol, {
-        text,
-        price,
-        image: shopPendingMain || null,
-        createdAt: Date.now()
-      });
+      await addDoc(productsCol, { text, price, image: shopPendingMain || null, createdAt: Date.now() });
       shopShowToast('✓ تمت إضافة المنتج');
       document.getElementById('shopMainText').value  = '';
       document.getElementById('shopMainPrice').value = '';
       shopPendingMain = null;
       document.getElementById('shopMainUpload').innerHTML =
         `<input type="file" id="shopMainImg" accept="image/*" onchange="shopPreviewMain(this)"><span class="shop-upload-icon">📷</span><span class="shop-upload-hint">اضغط أو اسحب الصورة</span>`;
-      shopSetupDrag('shopMainUpload','main');
-    } catch(e) {
-      shopShowToast('⚠️ حدث خطأ أثناء الإضافة');
-      console.error(e);
-    }
-
-    if(btn){ btn.disabled = false; btn.textContent = '+ إضافة'; }
+      shopSetupDrag('shopMainUpload', 'main');
+    } catch(e) { shopShowToast('⚠️ حدث خطأ أثناء الإضافة'); console.error(e); }
+    if (btn) { btn.disabled = false; btn.textContent = '+ إضافة'; }
   }
 
-  /* ── DELETE — Firestore'dan sil ── */
-  window.shopDeleteProduct = async function(docId){
-    if(!confirm('هل تريد حذف هذا المنتج؟')) return;
+  window.shopDeleteProduct = async function(docId) {
+    if (!confirm('هل تريد حذف هذا المنتج؟')) return;
     try {
-      await deleteDoc(doc(shopDb, 'products', docId));
+      await deleteDoc(doc(db, 'products', docId));
       shopCart = shopCart.filter(c => c._docId !== docId);
       shopUpdateCartUI();
       shopShowToast('تم حذف المنتج');
-    } catch(e) {
-      shopShowToast('⚠️ فشل الحذف');
-      console.error(e);
-    }
+    } catch(e) { shopShowToast('⚠️ فشل الحذف'); console.error(e); }
   }
 
-  /* ── EDIT — modal aç ── */
-  window.shopOpenEdit = function(docId){
-    shopEditingId  = docId;
-    shopPendingModal = null;
+  window.shopOpenEdit = function(docId) {
+    shopEditingId = docId; shopPendingModal = null;
     const p = shopProducts.find(x => x._docId === docId);
-    if(!p) return;
+    if (!p) return;
     document.getElementById('shopModalText').value  = p.text;
     document.getElementById('shopModalPrice').value = p.price || '';
     const a = document.getElementById('shopModalUpload');
-    if(p.image)
-      a.innerHTML = `<input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)"><img src="${p.image}" class="shop-modal-preview">`;
-    else
-      a.innerHTML = `<input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)"><span class="shop-upload-icon">📷</span><span class="shop-upload-hint">اضغط لتغيير الصورة</span>`;
+    a.innerHTML = p.image
+      ? `<input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)"><img src="${p.image}" class="shop-modal-preview">`
+      : `<input type="file" id="shopModalImg" accept="image/*" onchange="shopPreviewModal(this)"><span class="shop-upload-icon">📷</span><span class="shop-upload-hint">اضغط لتغيير الصورة</span>`;
     document.getElementById('shopEditModal').classList.add('open');
-    setTimeout(() => shopSetupDrag('shopModalUpload','modal'), 50);
+    setTimeout(() => shopSetupDrag('shopModalUpload', 'modal'), 50);
   }
 
-  window.shopCloseModal = function(){
+  window.shopCloseModal = function() {
     document.getElementById('shopEditModal').classList.remove('open');
     shopEditingId = null; shopPendingModal = null;
   }
 
-  /* ── SAVE EDIT — Firestore'u güncelle ── */
-  window.shopSaveEdit = async function(){
+  window.shopSaveEdit = async function() {
     const text = document.getElementById('shopModalText').value.trim();
-    if(!text){ shopShowToast('الوصف لا يمكن أن يكون فارغاً'); return; }
-
-    const saveBtn = document.querySelector('.shop-btn-save');
-    if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = '...جارٍ الحفظ'; }
-
-    const updates = {
-      text,
-      price: parseFloat(document.getElementById('shopModalPrice').value) || 0
-    };
-    if(shopPendingModal) updates.image = shopPendingModal;
-
+    if (!text) { shopShowToast('الوصف لا يمكن أن يكون فارغاً'); return; }
+    const saveBtn = document.querySelector('#shopEditModal .shop-btn-save');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '...جارٍ الحفظ'; }
+    const updates = { text, price: parseFloat(document.getElementById('shopModalPrice').value) || 0 };
+    if (shopPendingModal) updates.image = shopPendingModal;
     try {
-      await updateDoc(doc(shopDb, 'products', shopEditingId), updates);
+      await updateDoc(doc(db, 'products', shopEditingId), updates);
       shopCloseModal();
       shopShowToast('✓ تم حفظ التغييرات');
-    } catch(e) {
-      shopShowToast('⚠️ فشل حفظ التغييرات');
-      console.error(e);
-    }
-
-    if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = '💾 حفظ'; }
+    } catch(e) { shopShowToast('⚠️ فشل حفظ التغييرات'); console.error(e); }
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 حفظ'; }
   }
 
   document.getElementById('shopEditModal').addEventListener('click', e => {
-    if(e.target === document.getElementById('shopEditModal')) shopCloseModal();
+    if (e.target === document.getElementById('shopEditModal')) shopCloseModal();
   });
 
-  /* ── QTY ── */
-  window.shopChangeQty = function(docId, d){
-    if(!shopQuantities[docId]) shopQuantities[docId] = 1;
-    shopQuantities[docId] = Math.max(1, shopQuantities[docId] + d);
+  // ── Qty ──
+  window.shopChangeQty = function(docId, d) {
+    shopQuantities[docId] = Math.max(1, (shopQuantities[docId] || 1) + d);
     const el = document.getElementById('shop-qty-' + docId);
-    if(el) el.textContent = shopQuantities[docId];
+    if (el) el.textContent = shopQuantities[docId];
   }
 
-  /* ── CART ── */
-  window.shopAddToCart = function(docId){
-    const p   = shopProducts.find(x => x._docId === docId);
+  // ── Cart ──
+  window.shopAddToCart = function(docId) {
+    const p = shopProducts.find(x => x._docId === docId);
     const qty = shopQuantities[docId] || 1;
-    const ex  = shopCart.find(c => c._docId === docId);
-    if(ex) ex.qty += qty;
-    else   shopCart.push({ _docId: docId, text: p.text, image: p.image, qty, price: p.price || 0 });
+    const ex = shopCart.find(c => c._docId === docId);
+    if (ex) ex.qty += qty;
+    else shopCart.push({ _docId: docId, text: p.text, image: p.image, qty, price: p.price || 0 });
     shopQuantities[docId] = 1;
     const el = document.getElementById('shop-qty-' + docId);
-    if(el) el.textContent = 1;
+    if (el) el.textContent = 1;
     shopUpdateCartUI(); shopShowToast('✓ أُضيف إلى السلة');
   }
 
-  window.shopRemoveFromCart = function(docId){
+  window.shopRemoveFromCart = function(docId) {
     shopCart = shopCart.filter(c => c._docId !== docId);
     shopUpdateCartUI();
   }
 
-  window.shopUpdateCartUI = function(){
-    const total = shopCart.reduce((s,c) => s + c.qty, 0);
+  window.shopUpdateCartUI = function() {
+    const total = shopCart.reduce((s, c) => s + c.qty, 0);
     const badge = document.getElementById('shopCartBadge');
     badge.textContent = total;
     badge.classList.add('pop');
     setTimeout(() => badge.classList.remove('pop'), 300);
     document.getElementById('shopDrawerTotal').textContent = total + ' عنصر';
-
     document.getElementById('shopCustomerInfoSection').style.display = shopCart.length ? 'block' : 'none';
-
     const di = document.getElementById('shopDrawerItems');
-    if(!shopCart.length){ di.innerHTML = `<div class="shop-drawer-empty">🛒 السلة فارغة</div>`; return; }
+    if (!shopCart.length) { di.innerHTML = `<div class="shop-drawer-empty">🛒 السلة فارغة</div>`; return; }
     di.innerHTML = shopCart.map(c => `
       <div class="shop-drawer-item">
         <div class="shop-di-img">${c.image ? `<img src="${c.image}">` : '📦'}</div>
         <div class="shop-di-info">
-          <div class="shop-di-name">${shopEscHtml(c.text)}</div>
+          <div class="shop-di-name">${shopEsc(c.text)}</div>
           <div class="shop-di-qty">الكمية: ${c.qty}</div>
         </div>
         <button class="shop-di-rm" onclick="shopRemoveFromCart('${c._docId}')">✕</button>
       </div>`).join('');
   }
 
-  window.shopToggleCart = function(){
+  window.shopToggleCart = function() {
     document.getElementById('shopCartOverlay').classList.toggle('open');
     document.getElementById('shopCartDrawer').classList.toggle('open');
   }
 
-  window.shopCheckout = function(){
-    if(!shopCart.length){ shopShowToast('السلة فارغة!'); return; }
-
+  window.shopCheckout = function() {
+    if (!shopCart.length) { shopShowToast('السلة فارغة!'); return; }
     const name    = document.getElementById('shopCiName').value.trim();
     const phone   = document.getElementById('shopCiPhone').value.trim();
     const address = document.getElementById('shopCiAddress').value.trim();
     let valid = true;
-
-    const cfName    = document.getElementById('shop-cf-name');
-    const cfPhone   = document.getElementById('shop-cf-phone');
-    const cfAddress = document.getElementById('shop-cf-address');
-    cfName.classList.remove('error');
-    cfPhone.classList.remove('error');
-    cfAddress.classList.remove('error');
-
-    if(!name){ cfName.classList.add('error'); valid = false; }
-    if(!phone || phone.replace(/\D/g,'').length < 7){ cfPhone.classList.add('error'); valid = false; }
-    if(!address){ cfAddress.classList.add('error'); valid = false; }
-
-    if(!valid){
+    ['shop-cf-name','shop-cf-phone','shop-cf-address'].forEach(id => document.getElementById(id).classList.remove('error'));
+    if (!name)   { document.getElementById('shop-cf-name').classList.add('error');    valid = false; }
+    if (!phone || phone.replace(/\D/g,'').length < 7) { document.getElementById('shop-cf-phone').classList.add('error');  valid = false; }
+    if (!address){ document.getElementById('shop-cf-address').classList.add('error'); valid = false; }
+    if (!valid) {
       shopShowToast('⚠️ يرجى تعبئة جميع الحقول المطلوبة');
       document.getElementById('shopCustomerInfoSection').scrollIntoView({ behavior:'smooth', block:'center' });
       return;
     }
-
-    const itemLines = shopCart.map(c =>
-      `  • ${c.text}${c.price ? ' (' + c.price.toFixed(2) + '$)' : ''} — الكمية: ${c.qty}`
-    ).join('\n');
-
-    const tgMsg =
-`🛒 <b>طلب جديد!</b>
-
-👤 <b>الاسم:</b> ${name}
-📞 <b>الهاتف:</b> ${phone}
-📍 <b>العنوان:</b> ${address}
-
-📦 <b>المنتجات:</b>
-${itemLines}
-
-🔢 <b>إجمالي العناصر:</b> ${shopCart.reduce((s,c) => s + c.qty, 0)}`;
-
-    shopSendTelegram(tgMsg);
+    const itemLines = shopCart.map(c => `  • ${c.text}${c.price ? ' (' + c.price.toFixed(2) + '$)' : ''} — الكمية: ${c.qty}`).join('\n');
+    shopSendTelegram(`🛒 <b>طلب جديد!</b>\n\n👤 <b>الاسم:</b> ${name}\n📞 <b>الهاتف:</b> ${phone}\n📍 <b>العنوان:</b> ${address}\n\n📦 <b>المنتجات:</b>\n${itemLines}\n\n🔢 <b>إجمالي العناصر:</b> ${shopCart.reduce((s,c)=>s+c.qty,0)}`);
     shopShowToast(`✓ تم تأكيد طلبك يا ${name}! شكراً لك`);
     shopCart = [];
-    document.getElementById('shopCiName').value    = '';
-    document.getElementById('shopCiPhone').value   = '';
+    document.getElementById('shopCiName').value = '';
+    document.getElementById('shopCiPhone').value = '';
     document.getElementById('shopCiAddress').value = '';
     shopUpdateCartUI(); shopToggleCart();
   }
 
-  /* ── RENDER ── */
-  window.shopRenderProducts = function(){
+  window.shopRenderProducts = function() {
     const grid = document.getElementById('shopProductsGrid');
     document.getElementById('shopCountPill').textContent = shopProducts.length + ' منتج';
-    if(!shopProducts.length){
-      grid.innerHTML = `<div class="shop-empty-state"><div class="shop-empty-state-icon">🌱</div><h3 style="font-family:'Amiri',serif;font-size:1.4rem;margin-bottom:8px;">لا توجد منتجات بعد</h3><p style="font-size:.9rem;">قم بإضافة منتجات من لوحة المشرف</p></div>`;
+    if (!shopProducts.length) {
+      grid.innerHTML = `<div class="shop-empty-state"><div class="shop-empty-state-icon">🌱</div><h3 style="font-size:1.4rem;margin-bottom:8px;">لا توجد منتجات بعد</h3><p style="font-size:.9rem;">قم بإضافة منتجات من لوحة المشرف</p></div>`;
       return;
     }
-    const isAdmin = localStorage.getItem('almahayri_admin') === 'true';
     grid.innerHTML = shopProducts.map((p, i) => `
       <div class="shop-product-card" style="animation-delay:${i*0.07}s">
-        ${p.image
-          ? `<div class="shop-card-img-wrap"><img src="${p.image}" alt="منتج"></div>`
-          : `<div class="shop-card-img-placeholder">📦</div>`}
+        ${p.image ? `<div class="shop-card-img-wrap"><img src="${p.image}" alt="منتج"></div>` : `<div class="shop-card-img-placeholder">📦</div>`}
         <div class="shop-card-body">
-          <div class="shop-card-text">${shopEscHtml(p.text)}</div>
+          <div class="shop-card-text">${shopEsc(p.text)}</div>
           ${p.price ? `<div class="shop-card-price"><span>السعر</span> ${p.price.toFixed(2)} $</div>` : ''}
           <div class="shop-qty-row">
             <span class="shop-qty-label">الكمية</span>
@@ -690,72 +619,37 @@ ${itemLines}
       </div>`).join('');
   }
 
-  /* ── TOAST ── */
-  function shopShowToast(msg){
+  function shopShowToast(msg) {
     const t = document.getElementById('shopToast');
     t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
   }
+  // shopShowToast'u global yap (duyuru kodu kullanıyor)
+  window.shopShowToast = shopShowToast;
 
-  function shopEscHtml(s){
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  function shopEsc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
   }
 
-  // Validation temizleme
   ['shopCiName','shopCiPhone','shopCiAddress'].forEach(id => {
     const el = document.getElementById(id);
-    if(el) el.addEventListener('input', () => {
-      el.closest('.shop-ci-field').classList.remove('error');
-    });
+    if (el) el.addEventListener('input', () => el.closest('.shop-ci-field').classList.remove('error'));
   });
 
-  // Drag-and-drop başlat
-  shopSetupDrag('shopMainUpload','main');
-  shopSetupDrag('shopModalUpload','modal');
+  shopSetupDrag('shopMainUpload', 'main');
+  shopSetupDrag('shopModalUpload', 'modal');
 
-  // Firebase'den ürünleri dinlemeye başla
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', shopListenProducts);
-  } else {
-    shopListenProducts();
-  }
-</script>
-
-<script type="module">
-  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import {
-    getFirestore, collection, addDoc, deleteDoc, doc,
-    updateDoc, query, orderBy, onSnapshot, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-  /* ── Firebase'i mevcut instance'dan al ── */
-  let annApp;
-  const existingApps = getApps();
-  const namedApp = existingApps.find(a => a.name === '[DEFAULT]');
-  if (namedApp) { annApp = namedApp; }
-  else {
-    annApp = initializeApp({
-      apiKey: "AIzaSyDJ1_f4PIHcMS2qsHRx-0PCaxRkebDI9Eo",
-      authDomain: "yorum-8b483.firebaseapp.com",
-      projectId: "yorum-8b483",
-      storageBucket: "yorum-8b483.firebasestorage.app",
-      messagingSenderId: "331392423628",
-      appId: "1:331392423628:web:9a4b54b64217b06c91d469"
-    }, 'ann');
-  }
-  const annDb = getFirestore(annApp);
-
-  /* ── State ── */
-  let annEditingId   = null;
+  // ════════════════════════════════════════════
+  // DUYURULAR (aynı db instance kullanıyor)
+  // ════════════════════════════════════════════
+  let annEditingId     = null;
   let annSelectedColor = 'gold';
   let annSelectedIcon  = '🚚';
-  let annEditColor   = 'gold';
-  let annEditIcon    = '🚚';
+  let annEditColor     = 'gold';
+  let annEditIcon      = '🚚';
 
-  /* ── Firestore realtime listener ── */
   function annListen() {
-    const q = query(collection(annDb, 'announcements'), orderBy('createdAt', 'asc'));
+    const q = query(announcementsCol, orderBy('createdAt', 'asc'));
     onSnapshot(q, snap => {
       const grid = document.getElementById('annGrid');
       if (!grid) return;
@@ -772,44 +666,27 @@ ${itemLines}
     });
   }
 
-  /* ── Add ── */
   window.annAddAnnouncement = async function() {
-    const text = (document.getElementById('annText')||{}).value?.trim();
-    if (!text) { shopShowToast && shopShowToast('⚠️ يرجى كتابة نص الإعلان'); return; }
+    const text = document.getElementById('annText')?.value?.trim();
+    if (!text) { shopShowToast('⚠️ يرجى كتابة نص الإعلان'); return; }
     const btn = document.querySelector('.ann-btn-add');
     if (btn) { btn.disabled = true; btn.innerHTML = '...جارٍ النشر'; }
     try {
-      const auth = getAuth(annApp);
       const user = auth.currentUser;
-      if (!user) {
-        shopShowToast && shopShowToast('⚠️ يجب تسجيل الدخول أولاً');
-        return;
-      }
-      await addDoc(collection(annDb, 'announcements'), {
-        text, color: annSelectedColor, icon: annSelectedIcon,
-        createdAt: serverTimestamp()
-      });
+      if (!user) { shopShowToast('⚠️ يجب تسجيل الدخول أولاً'); return; }
+      await addDoc(announcementsCol, { text, color: annSelectedColor, icon: annSelectedIcon, createdAt: serverTimestamp() });
       document.getElementById('annText').value = '';
-      if (window.shopShowToast) shopShowToast('✓ تم نشر الإعلان');
-    } catch(e) {
-      if (window.shopShowToast) shopShowToast('⚠️ فشل النشر');
-      console.error(e);
-    }
+      shopShowToast('✓ تم نشر الإعلان');
+    } catch(e) { shopShowToast('⚠️ فشل النشر'); console.error(e); }
     if (btn) { btn.disabled = false; btn.innerHTML = '<span>+</span> نشر الإعلان'; }
   };
 
-  /* ── Delete ── */
   window.annDelete = async function(docId) {
     if (!confirm('هل تريد حذف هذا الإعلان؟')) return;
-    try {
-      await deleteDoc(doc(annDb, 'announcements', docId));
-      if (window.shopShowToast) shopShowToast('تم حذف الإعلان');
-    } catch(e) {
-      if (window.shopShowToast) shopShowToast('⚠️ فشل الحذف');
-    }
+    try { await deleteDoc(doc(db, 'announcements', docId)); shopShowToast('تم حذف الإعلان'); }
+    catch(e) { shopShowToast('⚠️ فشل الحذف'); }
   };
 
-  /* ── Open edit modal ── */
   window.annOpenEdit = function(docId) {
     const card = document.getElementById('ann-card-' + docId);
     if (!card) return;
@@ -818,17 +695,12 @@ ${itemLines}
       .replace(/<br>/g,'\n').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
     const colorCls = [...card.classList].find(c => c.startsWith('ann-') && c !== 'ann-card');
     annEditColor = colorCls ? colorCls.replace('ann-','') : 'gold';
-    annEditIcon  = card.querySelector('.ann-icon').textContent.trim();
-
+    annEditIcon  = card.querySelector('.ann-icon')?.textContent.trim() || '';
     document.getElementById('annEditText').value = rawText;
-
-    document.getElementById('annEditColorPicker')
-      .querySelectorAll('.ann-color-opt').forEach(b =>
-        b.classList.toggle('selected', b.dataset.color === annEditColor));
-    document.getElementById('annEditIconPicker')
-      .querySelectorAll('.ann-icon-opt').forEach(b =>
-        b.classList.toggle('selected', b.dataset.icon === annEditIcon));
-
+    document.getElementById('annEditColorPicker').querySelectorAll('.ann-color-opt')
+      .forEach(b => b.classList.toggle('selected', b.dataset.color === annEditColor));
+    document.getElementById('annEditIconPicker').querySelectorAll('.ann-icon-opt')
+      .forEach(b => b.classList.toggle('selected', b.dataset.icon === annEditIcon));
     document.getElementById('annEditModal').classList.add('open');
     setupEditPickers();
   };
@@ -838,62 +710,50 @@ ${itemLines}
     annEditingId = null;
   };
 
-  /* ── Save edit ── */
   window.annSaveEdit = async function() {
     const text = document.getElementById('annEditText').value.trim();
-    if (!text) { if(window.shopShowToast) shopShowToast('⚠️ النص فارغ'); return; }
+    if (!text) { shopShowToast('⚠️ النص فارغ'); return; }
     const btn = document.querySelector('#annEditModal .shop-btn-save');
     if (btn) { btn.disabled = true; btn.textContent = '...جارٍ الحفظ'; }
     try {
-      await updateDoc(doc(annDb, 'announcements', annEditingId),
-        { text, color: annEditColor, icon: annEditIcon });
-      annCloseEditModal();
-      if (window.shopShowToast) shopShowToast('✓ تم حفظ الإعلان');
-    } catch(e) {
-      if (window.shopShowToast) shopShowToast('⚠️ فشل الحفظ');
-    }
+      await updateDoc(doc(db, 'announcements', annEditingId), { text, color: annEditColor, icon: annEditIcon });
+      annCloseEditModal(); shopShowToast('✓ تم حفظ الإعلان');
+    } catch(e) { shopShowToast('⚠️ فشل الحفظ'); }
     if (btn) { btn.disabled = false; btn.textContent = '💾 حفظ التغييرات'; }
   };
 
-  /* ── Backdrop click ── */
   document.getElementById('annEditModal').addEventListener('click', e => {
     if (e.target.id === 'annEditModal') annCloseEditModal();
   });
 
-  /* ── Picker setup (add form) ── */
   function setupAddPickers() {
     document.querySelectorAll('#shopAdminPanel .ann-color-picker .ann-color-opt').forEach(btn => {
       btn.onclick = () => {
-        document.querySelectorAll('#shopAdminPanel .ann-color-picker .ann-color-opt')
-          .forEach(b => b.classList.remove('selected'));
+        document.querySelectorAll('#shopAdminPanel .ann-color-picker .ann-color-opt').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         annSelectedColor = btn.dataset.color;
       };
     });
     document.querySelectorAll('#shopAdminPanel .ann-icon-picker .ann-icon-opt').forEach(btn => {
       btn.onclick = () => {
-        document.querySelectorAll('#shopAdminPanel .ann-icon-picker .ann-icon-opt')
-          .forEach(b => b.classList.remove('selected'));
+        document.querySelectorAll('#shopAdminPanel .ann-icon-picker .ann-icon-opt').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         annSelectedIcon = btn.dataset.icon;
       };
     });
   }
 
-  /* ── Picker setup (edit modal) ── */
   function setupEditPickers() {
     document.getElementById('annEditColorPicker').querySelectorAll('.ann-color-opt').forEach(btn => {
       btn.onclick = () => {
-        document.getElementById('annEditColorPicker')
-          .querySelectorAll('.ann-color-opt').forEach(b => b.classList.remove('selected'));
+        document.getElementById('annEditColorPicker').querySelectorAll('.ann-color-opt').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         annEditColor = btn.dataset.color;
       };
     });
     document.getElementById('annEditIconPicker').querySelectorAll('.ann-icon-opt').forEach(btn => {
       btn.onclick = () => {
-        document.getElementById('annEditIconPicker')
-          .querySelectorAll('.ann-icon-opt').forEach(b => b.classList.remove('selected'));
+        document.getElementById('annEditIconPicker').querySelectorAll('.ann-icon-opt').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         annEditIcon = btn.dataset.icon;
       };
@@ -904,7 +764,8 @@ ${itemLines}
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
   }
 
-  /* ── Başlat ── */
+  // ── Başlat ──
+  shopListenProducts();
   annListen();
   setupAddPickers();
 </script>
